@@ -33,14 +33,6 @@ Vagrant.configure("2") do |config|
     lb.vm.network "private_network", ip: "192.168.56.10"
     lb.vm.provision "shell", inline: <<-SHELL << EOT
       sudo apt-get update
-<<<<<<< HEAD
-      sudo apt-get install -y nginx
-      sudo tee /etc/nginx/sites-available/default > /dev/null <<EOT
-      upstream web_backend {
-          server 192.168.56.11;
-          server 192.168.56.12;
-      }
-=======
       sudo apt-get install -y haproxy
       sudo tee /etc/haproxy/haproxy.cfg > /dev/null <<
       global
@@ -57,7 +49,6 @@ Vagrant.configure("2") do |config|
           ssl-default-bind-ciphers PROFILE=SYSTEM
           ssl-default-bind-options no-sslv3
           tune.ssl.default-dh-param 2048
->>>>>>> 51fd5b5 (update)
 
       server {
           listen 80 default_server;
