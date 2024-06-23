@@ -33,49 +33,29 @@ Vagrant.configure("2") do |config|
     lb.vm.network "private_network", ip: "192.168.56.10"
     lb.vm.provision "shell", inline: <<-SHELL
       sudo apt-get update
-      sudo apt-get install -y haproxy
-      sudo tee /etc/haproxy/haproxy.cfg > /dev/null <<EOT
-      global
-          log /dev/log    local0
-          log /dev/log    local1 notice
-          chroot /var/lib/haproxy
-          stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners
-          stats timeout 30s
-          user haproxy
-          group haproxy
-          daemon
-          ca-base /etc/ssl/certs
-          crt-base /etc/ssl/private
-          ssl-default-bind-ciphers PROFILE=SYSTEM
-          ssl-default-bind-options no-sslv3
-          tune.ssl.default-dh-param 2048
+      sudo apt-get install -y nginx
+      sudo tee /etc/nginx/sites-available/default > /dev/null <<EOT
+      upstream web_backend {
+          server 192.168.56.11;
+          server 192.168.56.12;
+      }
 
-      defaults
-          log     global
-          mode    http
-          option  httplog
-          option  dontlognull
-          timeout connect 5000
-          timeout client  50000
-          timeout server  50000
-          errorfile 400 /etc/haproxy/errors/400.http
-          errorfile 403 /etc/haproxy/errors/403.http
-          errorfile 408 /etc/haproxy/errors/408.http
-          errorfile 500 /etc/haproxy/errors/500.http
-          errorfile 502 /etc/haproxy/errors/502.http
-          errorfile 503 /etc/haproxy/errors/503.http
-          errorfile 504 /etc/haproxy/errors/504.http
+      server {
+          listen 80 default_server;
+          listen [::]:80 default_server;
 
-      frontend http_front
-          bind *:80
-          default_backend http_back
+          server_name _;
 
-      backend http_back
-          balance roundrobin
-          server webserver1 192.168.56.11:80 check
-          server webserver2 192.168.56.12:80 check
+          location / {
+              proxy_pass http://web_backend;
+              proxy_set_header Host \$host;
+              proxy_set_header X-Real-IP \$remote_addr;
+              proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto \$scheme;
+          }
+      }
       EOT
-      sudo systemctl restart haproxy
+      sudo systemctl restart nginx
     SHELL
   end
 end
