@@ -31,14 +31,33 @@ Vagrant.configure("2") do |config|
   config.vm.define "loadbalancer" do |lb|
     lb.vm.network "forwarded_port", guest: 80, host: 8080  # Forward port 80 to 8080
     lb.vm.network "private_network", ip: "192.168.56.10"
-    lb.vm.provision "shell", inline: <<-SHELL
+    lb.vm.provision "shell", inline: <<-SHELL << EOT
       sudo apt-get update
+<<<<<<< HEAD
       sudo apt-get install -y nginx
       sudo tee /etc/nginx/sites-available/default > /dev/null <<EOT
       upstream web_backend {
           server 192.168.56.11;
           server 192.168.56.12;
       }
+=======
+      sudo apt-get install -y haproxy
+      sudo tee /etc/haproxy/haproxy.cfg > /dev/null <<
+      global
+          log /dev/log    local0
+          log /dev/log    local1 notice
+          chroot /var/lib/haproxy
+          stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners
+          stats timeout 30s
+          user haproxy
+          group haproxy
+          daemon
+          ca-base /etc/ssl/certs
+          crt-base /etc/ssl/private
+          ssl-default-bind-ciphers PROFILE=SYSTEM
+          ssl-default-bind-options no-sslv3
+          tune.ssl.default-dh-param 2048
+>>>>>>> 51fd5b5 (update)
 
       server {
           listen 80 default_server;
@@ -46,16 +65,13 @@ Vagrant.configure("2") do |config|
 
           server_name _;
 
-          location / {
-              proxy_pass http://web_backend;
-              proxy_set_header Host \$host;
-              proxy_set_header X-Real-IP \$remote_addr;
-              proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto \$scheme;
-          }
-      }
+      backend http_back
+          balance roundrobin
+          server webserver1 192.168.56.11:80 check
+          server webserver2 192.168.56.12:80 check
+      sudo systemctl restart haproxy
       EOT
-      sudo systemctl restart nginx
+    
     SHELL
   end
 end

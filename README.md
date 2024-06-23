@@ -14,4 +14,9 @@
 - `ssh-add -k <path-to-your-key>` add your ssh key to the ssh agent key chain
 - `ssh-add -l` List all keys added to your ssh agent 
 - `vagrant plugin install vagrant-aws` install Vagrant aws plugin
-       
+
+
+# Vagrant commands
+
+- vagrant up
+- vagrant destroy
